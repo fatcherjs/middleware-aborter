@@ -1,3 +1,7 @@
+## v2.0.0
+
+-   🔧 Refactor AbortEventHandler ([#3](https://github.com/fatcherjs/middleware-aborter/pull/3))
+
 ## v1.4.1
 
 -   🐛 Fix error which will not trigger `onAbort` in `timeout` ([#160](https://github.com/fatcherjs/fatcher/pull/160))

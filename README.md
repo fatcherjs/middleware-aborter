@@ -2,6 +2,12 @@
 
 A middleware for aborting fatcher request.
 
+[![codecov](https://codecov.io/gh/fatcherjs/middleware-aborter/branch/master/graph/badge.svg?token=TFKUGW6YNI)](https://codecov.io/gh/fatcherjs/middleware-aborter)
+[![install size](https://packagephobia.com/badge?p=@fatcherjs/middleware-aborter)](https://packagephobia.com/result?p=@fatcherjs/middleware-aborter)
+<a href="https://unpkg.com/@fatcherjs/middleware-aborter"><img alt="Size" src="https://img.badgesize.io/https://unpkg.com/@fatcherjs/middleware-aborter"></a>
+<a href="https://npmjs.com/package/@fatcherjs/middleware-aborter"><img src="https://img.shields.io/npm/v/@fatcherjs/middleware-aborter.svg" alt="npm package"></a>
+<a href="https://github.com/fatcherjs/middleware-aborter/actions/workflows/ci.yml"><img src="https://github.com/fatcherjs/middleware-aborter/actions/workflows/ci.yml/badge.svg?branch=master" alt="build status"></a>
+
 ## Install
 
 ### NPM
@@ -19,8 +25,8 @@ A middleware for aborting fatcher request.
 ## Usage
 
 ```ts
-import { aborter } from '@fatcherjs/middleware-aborter';
-import { fatcher, isAbortError } from 'fatcher';
+import { aborter, isAbortError } from '@fatcherjs/middleware-aborter';
+import { fatcher } from 'fatcher';
 
 fatcher({
     url: '/bar/foo',
