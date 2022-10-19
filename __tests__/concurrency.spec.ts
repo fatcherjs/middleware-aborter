@@ -24,7 +24,7 @@ describe('Concurrency', () => {
     it('Without Concurrency', async () => {
         const send = () =>
             fatcher({
-                baseUrl: BASE_URL,
+                base: BASE_URL,
                 url: '/concurrency',
                 middlewares: [
                     aborter({
@@ -42,14 +42,14 @@ describe('Concurrency', () => {
         const send = async () => {
             try {
                 const { status } = await fatcher({
-                    baseUrl: BASE_URL,
+                    base: BASE_URL,
                     url: '/concurrency',
                     middlewares: [
                         aborter({
                             concurrency: true,
-                            onAbort(reason) {
-                                expect(reason).toBe('concurrency');
-                            },
+                            // onAbort(reason) {
+                            //     expect(reason).toBe('concurrency');
+                            // },
                         }),
                     ],
                 });
@@ -72,7 +72,7 @@ describe('Concurrency', () => {
         const send = async () => {
             try {
                 const { status } = await fatcher({
-                    baseUrl: BASE_URL,
+                    base: BASE_URL,
                     url: '/concurrency',
                     middlewares: [
                         aborter({
