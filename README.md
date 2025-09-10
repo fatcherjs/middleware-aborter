@@ -1,12 +1,8 @@
 # @fatcherjs/middleware-aborter
 
-A middleware for aborting fatcher request.
-
-[![codecov](https://codecov.io/gh/fatcherjs/middleware-aborter/branch/master/graph/badge.svg?token=TFKUGW6YNI)](https://codecov.io/gh/fatcherjs/middleware-aborter)
+<a href="https://npmjs.com/package/@fatcherjs/middleware-aborter"><img src="https://img.shields.io/npm/v/@fatcherjs/middleware-aborter.svg" alt="npm package"></a>
 [![install size](https://packagephobia.com/badge?p=@fatcherjs/middleware-aborter)](https://packagephobia.com/result?p=@fatcherjs/middleware-aborter)
 <a href="https://unpkg.com/@fatcherjs/middleware-aborter"><img alt="Size" src="https://img.badgesize.io/https://unpkg.com/@fatcherjs/middleware-aborter"></a>
-<a href="https://npmjs.com/package/@fatcherjs/middleware-aborter"><img src="https://img.shields.io/npm/v/@fatcherjs/middleware-aborter.svg" alt="npm package"></a>
-<a href="https://github.com/fatcherjs/middleware-aborter/actions/workflows/ci.yml"><img src="https://github.com/fatcherjs/middleware-aborter/actions/workflows/ci.yml/badge.svg?branch=master" alt="build status"></a>
 
 ## Install
 
@@ -19,49 +15,161 @@ A middleware for aborting fatcher request.
 ### CDN
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fatcherjs/middleware-aborter/dist/aborter.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fatcher/dist/fatcher.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fatcherjs/middleware-aborter/dist/index.min.js"></script>
+
+<script>
+  Fatcher.fatcher('xxx', {
+    middlewares: [FatcherMiddlewareAborter.aborter, FatcherMiddlewareAborter.timeout],
+    onAbort: () => {},
+    onTimeout: () => {},
+    timeout: 30000,
+  })
+    .then(response => {
+      console.log(response);
+    })
+    .catch(error => {
+      if (FatcherMiddlewareAborter.isAbortError(error)) {
+        // do somethings
+        return;
+      }
+
+      // do other thing
+    });
+</script>
 ```
 
 ## Usage
 
+### Aborter
+
+#### Types
+
 ```ts
-import { aborter, isAbortError } from '@fatcherjs/middleware-aborter';
-import { fatcher } from 'fatcher';
+declare module 'fatcher' {
+  interface FatcherOptions {
+    onAbort?: (reason?: string) => void;
+  }
 
-fatcher({
-    url: '/bar/foo',
-    middlewares: [
-        aborter({
-            timeout: 10 * 1000, // 10s
-            onAbort: () => {
-                console.log('Request is Aborted.');
-            },
-        }),
-    ],
-})
-    .then(res => {
-        // Request success in 10s
-        console.log(res);
-    })
-    .catch(err => {
-        if (isAbortError(err)) {
-            //Run error when request aborted.
-            console.error(err);
-        }
+  interface FatcherContext {
+    abort: (reason?: string) => void;
+  }
 
-        // Other errors.
-    });
+  interface FatcherResponse {
+    abort: (reason?: string) => void;
+  }
+}
 ```
 
-## Options
+#### Basic
 
-| Name        | Description                                     | Type                                     | DefaultValue                                                                         |
-| ----------- | ----------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
-| timeout     | If `timeout > 0`, will abort this request later | `number`                                 | `0`                                                                                  |
-| onAbort     | A callback when aborting this request           | `(() => void) \| null`                   | `null`                                                                               |
-| concurrency | Request concurrency restrictions                | `boolean`                                | `false`                                                                              |
-| groupBy     | Concurrency key                                 | `(context: Readonly<Context>) => string` | `${context.url}_${context.method}_${new URLSearchParams(context.params).toString()}` |
+```ts
+import { fatcher } from 'fatcher';
+import { aborter } from '@fatcherjs/middleware-aborter';
+
+const response = await fatcher('xxx', {
+  onAbort: () => {
+    console.log('Aborted!');
+  },
+  middlewares: [aborter],
+});
+
+response.abort(); // stop reading body
+```
+
+#### Custom Signal
+
+```ts
+import { fatcher } from 'fatcher';
+import { aborter } from '@fatcherjs/middleware-aborter';
+
+const aborterController = new AbortController();
+
+const response = await fatcher('xxx', {
+  signal: aborterController.signal,
+  onAbort: () => {
+    console.log('Aborted!');
+  },
+  middlewares: [aborter],
+});
+
+aborterController.abort();
+```
+
+#### Abort In Middleware
+
+```ts
+import { fatcher } from 'fatcher';
+import { aborter } from '@fatcherjs/middleware-aborter';
+
+const response = await fatcher('xxx', {
+  onAbort: () => {
+    console.log('Aborted!');
+  },
+  middlewares: [
+    aborter,
+    (context, next) => {
+      context.abort();
+      return next();
+    },
+  ],
+});
+
+console.log(response);
+```
+
+### Timeout
+
+#### Types
+
+```ts
+declare module 'fatcher' {
+  interface FatcherOptions {
+    timeout?: number; // default 60 * 1000 (60s)
+    onTimeout?: () => void;
+  }
+}
+```
+
+#### Basic
+
+```ts
+import { fatcher } from 'fatcher';
+import { timeout } from '@fatcherjs/middleware-aborter';
+
+const response = await fatcher('xxx', {
+  middlewares: [timeout],
+  timeout: 30 * 1000,
+  onTimeout: () => {
+    console.log('timeout!');
+  },
+});
+```
+
+### isAbortError
+
+```ts
+import { fatcher } from 'fatcher';
+import { aborter, isAbortError, timeout } from '@fatcherjs/middleware-aborter';
+
+const abortController = new AbortController();
+
+fatcher('https://foo.bar', {
+  onAbort: () => console.log('aborted'),
+  signal: abortController.signal,
+  timeout: 30 * 1000,
+  middlewares: [aborter, timeout],
+}).catch(error => {
+  if (isAbortError(error)) {
+    // do something..
+    return;
+  }
+  // other error
+});
+
+abortController.abort();
+```
 
 ## License
 
-[MIT](https://github.com/fatcherjs/fatcher/blob/master/LICENSE)
+[MIT](https://github.com/fatcherjs/middleware-aborter/blob/master/LICENSE)
