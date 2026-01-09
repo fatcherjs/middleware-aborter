@@ -21,6 +21,29 @@
   </a>
 </div>
 
+## Tips
+
+If you want to abort request manually, you should use `AbortController` and pass the signal to `fatcher`
+
+```ts
+import { fatcher } from 'fatcher';
+
+const abortController = new AbortController();
+
+fatcher('your-url', {
+  signal: abortController.signal,
+}).catch(error => {
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    // aborted.
+    return;
+  }
+
+  // other
+});
+
+abortController.abort();
+```
+
 ## Install
 
 ### NPM
@@ -37,8 +60,7 @@
 
 <script>
   Fatcher.fatcher('xxx', {
-    middlewares: [FatcherMiddlewareAborter.aborter, FatcherMiddlewareAborter.timeout],
-    onAbort: () => {},
+    middlewares: [FatcherMiddlewareAborter.timeout],
     onTimeout: () => {},
     timeout: 30000,
   })
@@ -46,7 +68,7 @@
       console.log(response);
     })
     .catch(error => {
-      if (FatcherMiddlewareAborter.isAbortError(error)) {
+      if (FatcherMiddlewareAborter.isTimeoutError(error)) {
         // do somethings
         return;
       }
@@ -57,83 +79,6 @@
 ```
 
 ## Usage
-
-### Aborter
-
-#### Types
-
-```ts
-declare module 'fatcher' {
-  interface FatcherOptions {
-    onAbort?: (reason?: string) => void;
-  }
-
-  interface FatcherContext {
-    abort: (reason?: string) => void;
-  }
-
-  interface FatcherResponse {
-    abort: (reason?: string) => void;
-  }
-}
-```
-
-#### Basic
-
-```ts
-import { fatcher } from 'fatcher';
-import { aborter } from '@fatcherjs/middleware-aborter';
-
-const response = await fatcher('xxx', {
-  onAbort: () => {
-    console.log('Aborted!');
-  },
-  middlewares: [aborter],
-});
-
-response.abort(); // stop reading body
-```
-
-#### Custom Signal
-
-```ts
-import { fatcher } from 'fatcher';
-import { aborter } from '@fatcherjs/middleware-aborter';
-
-const aborterController = new AbortController();
-
-const response = await fatcher('xxx', {
-  signal: aborterController.signal,
-  onAbort: () => {
-    console.log('Aborted!');
-  },
-  middlewares: [aborter],
-});
-
-aborterController.abort();
-```
-
-#### Abort In Middleware
-
-```ts
-import { fatcher } from 'fatcher';
-import { aborter } from '@fatcherjs/middleware-aborter';
-
-const response = await fatcher('xxx', {
-  onAbort: () => {
-    console.log('Aborted!');
-  },
-  middlewares: [
-    aborter,
-    (context, next) => {
-      context.abort();
-      return next();
-    },
-  ],
-});
-
-console.log(response);
-```
 
 ### Timeout
 
@@ -163,28 +108,22 @@ const response = await fatcher('xxx', {
 });
 ```
 
-### isAbortError
+### isTimeoutError
 
 ```ts
 import { fatcher } from 'fatcher';
-import { aborter, isAbortError, timeout } from '@fatcherjs/middleware-aborter';
-
-const abortController = new AbortController();
+import { isTimeoutError, timeout } from '@fatcherjs/middleware-aborter';
 
 fatcher('https://foo.bar', {
-  onAbort: () => console.log('aborted'),
-  signal: abortController.signal,
   timeout: 30 * 1000,
-  middlewares: [aborter, timeout],
+  middlewares: [timeout],
 }).catch(error => {
-  if (isAbortError(error)) {
+  if (isTimeoutError(error)) {
     // do something..
     return;
   }
   // other error
 });
-
-abortController.abort();
 ```
 
 ## License
