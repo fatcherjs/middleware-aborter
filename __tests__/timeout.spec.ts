@@ -2,7 +2,7 @@ import { fatcher } from 'fatcher';
 import { delay, http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { isAbortError, timeout } from '../src';
+import { isTimeoutError, timeout } from '../src';
 
 const server = setupServer(
   http.get('https://foo.bar', async () => {
@@ -28,8 +28,51 @@ describe('Timeout', () => {
     try {
       await fatcher('https://foo.bar', { timeout: 500, middlewares: [timeout] });
     } catch (error) {
-      console.log(error);
-      expect(isAbortError(error)).toBe(true);
+      expect(isTimeoutError(error)).toBe(true);
     }
+  });
+
+  it('Abort on timeout callback', async () => {
+    let called = false;
+
+    try {
+      await fatcher('https://foo.bar', {
+        timeout: 500,
+        middlewares: [timeout],
+        onTimeout: () => {
+          called = true;
+        },
+      });
+    } catch (error) {
+      expect(isTimeoutError(error)).toBe(true);
+    }
+
+    expect(called).toBe(true);
+  });
+
+  it('Will not trigger timeout when aborted', async () => {
+    const abortController = new AbortController();
+
+    let called = false;
+
+    try {
+      const promise = fatcher('https://foo.bar', {
+        timeout: 1000,
+        middlewares: [timeout],
+        onTimeout: () => {
+          called = true;
+        },
+        signal: abortController.signal,
+      });
+
+      abortController.abort();
+
+      await promise;
+    } catch (error) {
+      expect(isTimeoutError(error)).toBe(false);
+      expect(error instanceof DOMException && error.name === 'AbortError');
+    }
+
+    expect(called).toBe(false);
   });
 });
