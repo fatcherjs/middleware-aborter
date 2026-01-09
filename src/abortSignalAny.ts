@@ -1,7 +1,5 @@
 export function abortSignalAny(signals: AbortSignal[]) {
-  // @ts-ignore
   if (typeof AbortSignal.any === 'function') {
-    // @ts-ignore
     return AbortSignal.any(signals);
   }
 
